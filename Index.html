@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AetherFlow - Neon Particle Gestures</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome for Premium UI Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #000;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .font-space {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    /* Smooth transition for glowing headers */
+    .neon-text-cyan {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.5), 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+    .neon-text-pink {
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.5), 0 0 20px rgba(236, 72, 153, 0.3);
+    }
+    /* Custom video overlay glass effect */
+    .pip-container {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+      border: 2px solid rgba(6, 182, 212, 0.5);
+      animation: neon-pulse 3s infinite ease-in-out;
+    }
+    @keyframes neon-pulse {
+      0%, 100% { border-color: rgba(6, 182, 212, 0.4); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+      50% { border-color: rgba(236, 72, 153, 0.8); box-shadow: 0 0 25px rgba(236, 72, 153, 0.4); }
+    }
+    /* Hide scrollbars globally */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    /* Spinner animation */
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #06b6d4;
+      border-radius: 50%;
+      width: 2.5rem;
+      height: 2.5rem;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen select-none">
+
+  <!-- Fullscreen Interactive Canvas -->
+  <canvas id="flowCanvas" class="absolute inset-0 w-full h-full z-0 block"></canvas>
+
+  <!-- Premium Top Overlay Header & Controls -->
+  <div class="absolute top-0 left-0 w-full p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 z-10 pointer-events-none">
+    
+    <!-- Title and Active Gesture Info -->
+    <div class="bg-black/40 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-4 pointer-events-auto">
+      <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 to-pink-500 text-white shadow-lg">
+        <i class="fa-solid fa-wand-magic-sparkles text-xl animate-pulse"></i>
+      </div>
+      <div>
+        <h1 class="text-white font-space font-semibold text-lg tracking-wide flex items-center gap-2">
+          AETHERFLOW <span class="text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded-full font-sans">v2.5</span>
+        </h1>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+          <p id="gestureStatus" class="text-sm font-medium text-gray-300">System Ready</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active State & Dynamic Shape Controller -->
+    <div class="flex flex-wrap gap-2 pointer-events-auto bg-black/40 backdrop-blur-md p-2 rounded-2xl border border-white/10">
+      <button id="btnGalaxy" class="shape-btn px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-300 bg-white/10 text-white border border-white/10 hover:bg-white/20" onclick="switchShape('GALAXY')">
+        <i class="fa-solid fa-bahai mr-1.5 text-cyan-400"></i>Galaxy
+      </button>
+      <button id="btnSaturn" class="shape-btn px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-300 bg-white/5 text-gray-400 hover:bg-white/10" onclick="switchShape('SATURN')">
+        <i class="fa-solid fa-ring mr-1.5 text-pink-400"></i>Saturn
+      </button>
+      <button id="btnHeart" class="shape-btn px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-300 bg-white/5 text-gray-400 hover:bg-white/10" onclick="switchShape('HEART')">
+        <i class="fa-solid fa-heart mr-1.5 text-red-500 animate-pulse"></i>Heart
+      </button>
+      <button id="btnLove" class="shape-btn px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-300 bg-white/5 text-gray-400 hover:bg-white/10" onclick="switchShape('LOVE')">
+        <i class="fa-solid fa-message mr-1.5 text-purple-400"></i>I LOVE YOU
+      </button>
+      <button id="btnSeeYou" class="shape-btn px-4 py-2 text-xs font-semibold rounded-xl transition-all duration-300 bg-white/5 text-gray-400 hover:bg-white/10" onclick="switchShape('SEEYOU')">
+        <i class="fa-solid fa-comment-dots mr-1.5 text-emerald-400"></i>SEE YOU
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Instruction Box -->
+  <div class="absolute bottom-6 left-6 max-w-xs md:max-w-sm bg-black/50 backdrop-blur-lg border border-white/10 rounded-2xl p-4 text-white z-10 transition-all duration-300 hover:border-cyan-500/40">
+    <div class="flex items-start gap-3">
+      <div class="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg">
+        <i class="fa-solid fa-circle-info text-lg"></i>
+      </div>
+      <div>
+        <h3 class="font-semibold text-sm text-gray-100">Live AI Gesture Guides:</h3>
+        <ul class="text-xs text-gray-400 mt-2 space-y-1.5">
+          <li class="flex items-center gap-1.5"><i class="fa-solid fa-hand-fist text-pink-400 w-4 text-center"></i> <span><strong>Fist:</strong> 3D Tilted Saturn Planet</span></li>
+          <li class="flex items-center gap-1.5"><i class="fa-solid fa-hand text-red-400 w-4 text-center"></i> <span><strong>Open Palm:</strong> Realistic Glowing Heart</span></li>
+          <li class="flex items-center gap-1.5"><i class="fa-solid fa-hand-point-up text-purple-400 w-4 text-center"></i> <span><strong>Index Only:</strong> "I LOVE YOU" text</span></li>
+          <li class="flex items-center gap-1.5"><i class="fa-solid fa-hand-peace text-emerald-400 w-4 text-center"></i> <span><strong>Peace:</strong> "SEE YOU" typography</span></li>
+        </ul>
+        <p class="text-[10px] text-gray-500 mt-3 border-t border-white/5 pt-2 italic">
+          No camera? Tap the selector buttons at the top to trigger shapes manually.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Picture-in-Picture Webcam View Container (Bottom Right) -->
+  <div class="absolute bottom-6 right-6 w-32 h-24 md:w-48 md:h-36 rounded-2xl overflow-hidden pip-container bg-neutral-900 z-10 transition-all duration-300 flex items-center justify-center">
+    <!-- Mirrored User Camera -->
+    <video id="webcam" class="w-full h-full object-cover scale-x-[-1] absolute inset-0 hidden" autoplay playsinline muted></video>
+    
+    <!-- Video Feed Status Icon / Placeholder -->
+    <div id="videoPlaceholder" class="text-gray-400 flex flex-col items-center justify-center p-2 text-center">
+      <i class="fa-solid fa-video-slash text-xl md:text-2xl mb-1 text-gray-500"></i>
+      <span class="text-[9px] md:text-xs">Cam Off</span>
+    </div>
+
+    <!-- Active State Overlay -->
+    <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded-md text-[8px] md:text-[10px] text-cyan-400 font-semibold uppercase tracking-wider flex items-center gap-1 border border-cyan-500/20">
+      <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+      <span>CAM FEED</span>
+    </div>
+  </div>
+
+  <!-- Fullscreen Loading & Permission Prompt -->
+  <div id="loadingOverlay" class="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 z-50 transition-all duration-500">
+    <div class="max-w-md bg-neutral-900/50 p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+      <!-- Glow effect inside modal -->
+      <div class="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl"></div>
+
+      <div class="relative z-10 flex flex-col items-center">
+        <!-- Main Logo animation -->
+        <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-cyan-500 via-purple-500 to-pink-500 p-[1px] mb-6 shadow-lg shadow-cyan-500/20 animate-pulse">
+          <div class="w-full h-full bg-neutral-950 rounded-[15px] flex items-center justify-center">
+            <i class="fa-solid fa-hands text-3xl bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent"></i>
+          </div>
+        </div>
+
+        <h2 class="text-white font-space font-semibold text-2xl tracking-wide">Starting AI Engines</h2>
+        <p class="text-sm text-gray-400 mt-2 max-w-xs leading-relaxed">
+          Loading MediaPipe Hand Landmarker models & setting up high-performance WebGL context...
+        </p>
+
+        <!-- Spinner & Loading Logs -->
+        <div class="mt-8 flex flex-col items-center gap-3">
+          <div class="spinner"></div>
+          <span id="loadingLogs" class="text-xs font-semibold text-cyan-400 tracking-widest uppercase">Initializing Files...</span>
+        </div>
+
+        <div class="mt-8 flex flex-col gap-2 w-full">
+          <button id="btnAllowCamera" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-sm font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg shadow-cyan-500/25 active:scale-95" onclick="initSystem(true)">
+            <i class="fa-solid fa-camera mr-2"></i>Enable Camera Mode
+          </button>
+          <button id="btnDemoMode" class="w-full bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-sm font-semibold py-3 px-6 rounded-xl border border-white/10 transition-all duration-300 active:scale-95" onclick="initSystem(false)">
+            Launch in Demo Touch Mode
+          </button>
+        </div>
+        <p class="text-[10px] text-gray-500 mt-4">
+          Fully optimized for Chrome, Safari, and Android mobile browsers.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ES Modules Setup & Application Core -->
+  <script type="module">
+    import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/vision_bundle.js";
+
+    // Setup DOM elements
+    const canvas = document.getElementById("flowCanvas");
+    const ctx = canvas.getContext("2d");
+    const video = document.getElementById("webcam");
+    const videoPlaceholder = document.getElementById("videoPlaceholder");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const loadingLogs = document.getElementById("loadingLogs");
+    const gestureStatus = document.getElementById("gestureStatus");
+
+    // Application State Variables
+    let handLandmarker = null;
+    let cameraActive = false;
+    let lastDetectionTime = 0;
+    const PARTICLE_COUNT = 2500;
+    const particles = [];
+    let currentShapeType = "GALAXY"; // GALAXY, SATURN, HEART, LOVE, SEEYOU
+    let targetShapeType = "GALAXY";
+    let shapesProgress = 1.0; 
+
+    // Frame state tracking for transition scaling
+    let handCenter = { x: 0, y: 0, z: 0 };
+    let handTargetCenter = { x: 0, y: 0 };
+    let handScale = 1.0;
+    let handTargetScale = 1.0;
+    let isHandPresent = false;
+    let globalAngle = 0;
+
+    // Background Bokeh Setup (Macro feel)
+    const bokehParticles = [];
+    const BOKEH_COUNT = 15;
+
+    // Set canvas sizes perfectly and handle rotation
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // Seed/Adjust coordinates on resize
+      generateShapeTargets(targetShapeType);
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    // Initialize Background Bokeh
+    function initBokeh() {
+      bokehParticles.length = 0;
+      for (let i = 0; i < BOKEH_COUNT; i++) {
+        bokehParticles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          r: Math.random() * 80 + 40,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.2,
+          opacity: Math.random() * 0.12 + 0.03,
+          color: Math.random() > 0.5 ? "rgba(6, 182, 212, " : "rgba(236, 72, 153, "
+        });
+      }
+    }
+
+    // Mathematical Path Generators for typography letter targets
+    function getLetterPoint(char, t) {
+      let x = 0, y = 0;
+      switch (char) {
+        case 'I':
+          x = 0;
+          y = -0.8 + 1.6 * t;
+          break;
+        case 'L':
+          if (t < 0.6) {
+            x = -0.4;
+            y = -0.8 + 1.6 * (t / 0.6);
+          } else {
+            x = -0.4 + 0.8 * ((t - 0.6) / 0.4);
+            y = 0.8;
+          }
+          break;
+        case 'O':
+          x = 0.45 * Math.cos(2 * Math.PI * t);
+          y = 0.6 * Math.sin(2 * Math.PI * t);
+          break;
+        case 'V':
+          if (t < 0.5) {
+            x = -0.4 + 0.4 * (t / 0.5);
+            y = -0.8 + 1.6 * (t / 0.5);
+          } else {
+            x = 0 + 0.4 * ((t - 0.5) / 0.5);
+            y = 0.8 - 1.6 * ((t - 0.5) / 0.5);
+          }
+          break;
+        case 'E':
+          if (t < 0.4) {
+            x = -0.4;
+            y = -0.8 + 1.6 * (t / 0.4);
+          } else if (t < 0.6) {
+            x = -0.4 + 0.8 * ((t - 0.4) / 0.2);
+            y = -0.8;
+          } else if (t < 0.8) {
+            x = -0.4 + 0.6 * ((t - 0.6) / 0.2);
+            y = 0;
+          } else {
+            x = -0.4 + 0.8 * ((t - 0.8) / 0.2);
+            y = 0.8;
+          }
+          break;
+        case 'Y':
+          if (t < 0.35) {
+            x = -0.4 + 0.4 * (t / 0.35);
+            y = -0.8 + 0.8 * (t / 0.35);
+          } else if (t < 0.7) {
+            x = 0.4 - 0.4 * ((t - 0.35) / 0.35);
+            y = -0.8 + 0.8 * ((t - 0.35) / 0.35);
+          } else {
+            x = 0;
+            y = 0 + 0.8 * ((t - 0.7) / 0.3);
+          }
+          break;
+        case 'U':
+          if (t < 0.35) {
+            x = -0.4;
+            y = -0.8 + 1.2 * (t / 0.35);
+          } else if (t < 0.65) {
+            let u = (t - 0.35) / 0.30;
+            let angle = Math.PI + u * Math.PI;
+            x = 0.4 * Math.cos(angle);
+            y = 0.4 + 0.4 * Math.sin(angle);
+          } else {
+            x = 0.4;
+            y = 0.4 - 1.2 * ((t - 0.65) / 0.35);
+          }
+          break;
+        case 'S':
+          // Smooth parametric curves matching mathematical exact contours of S
+          if (t < 0.5) {
+            let u = t / 0.5;
+            let angle = -Math.PI/2 + u * 1.5 * Math.PI;
+            x = 0.35 * Math.cos(angle);
+            y = -0.35 + 0.35 * Math.sin(angle);
+          } else {
+            let u = (t - 0.5) / 0.5;
+            let angle = Math.PI/2 - u * 1.5 * Math.PI;
+            x = 0.35 * Math.cos(angle);
+            y = 0.35 + 0.35 * Math.sin(angle);
+          }
+          break;
+      }
+      return { x, y };
+    }
+
+    // Typography Word Configurations
+    const iLoveYouConfig = [
+      { char: 'I', count: 200, x: -2.3 },
+      { char: 'L', count: 250, x: -1.4 },
+      { char: 'O', count: 350, x: -0.8 },
+      { char: 'V', count: 300, x: -0.2 },
+      { char: 'E', count: 350, x:  0.4 },
+      { char: 'Y', count: 300, x:  1.3 },
+      { char: 'O', count: 350, x:  1.9 },
+      { char: 'U', count: 400, x:  2.5 }
+    ];
+
+    const seeYouConfig = [
+      { char: 'S', count: 450, x: -1.8 },
+      { char: 'E', count: 400, x: -1.1 },
+      { char: 'E', count: 400, x: -0.4 },
+      { char: 'Y', count: 400, x:  0.4 },
+      { char: 'O', count: 425, x:  1.1 },
+      { char: 'U', count: 425, x:  1.8 }
+    ];
+
+    // Main particle generator & state creation
+    function initParticles() {
+      particles.length = 0;
+      const palette = [
+        { r: 6, g: 182, b: 212 },   // Neon Cyan
+        { r: 236, g: 72, b: 153 },  // Neon Pink
+        { r: 168, g: 85, b: 247 },  // Electric Purple
+        { r: 16, g: 185, b: 129 }   // Emerald Glow
+      ];
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        // Pick a dynamic neon color index
+        const col = palette[i % palette.length];
+        
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          z: (Math.random() - 0.5) * 500,
+          vx: 0,
+          vy: 0,
+          vz: 0,
+          tx: 0,
+          ty: 0,
+          tz: 0,
+          r: col.r,
+          g: col.g,
+          b: col.b,
+          size: Math.random() * 1.5 + 1.0,
+          speedOffset: Math.random() * 0.02 + 0.01,
+          id: i
+        });
+      }
+    }
+
+    // Dynamic Mathematical Shape Map Constructor
+    function generateShapeTargets(shape) {
+      if (particles.length === 0) return;
+
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const minDimension = Math.min(window.innerWidth, window.innerHeight);
+
+      switch (shape) {
+        case "GALAXY":
+          // Starfield Spiral Helix (Idle State)
+          particles.forEach((p) => {
+            const arm = p.id % 3;
+            const radiusScale = Math.pow(p.id / PARTICLE_COUNT, 1.2);
+            const r = radiusScale * (minDimension * 0.42) + 15;
+            const theta = r * 0.015 + arm * ((2 * Math.PI) / 3) + (Math.random() - 0.5) * 0.2;
+            p.tx = r * Math.cos(theta);
+            p.ty = r * Math.sin(theta);
+            p.tz = (Math.random() - 0.5) * 100;
+          });
+          break;
+
+        case "SATURN":
+          // Fist Mapping -> 3D sphere + detailed tilted ring
+          const sphereCount = Math.floor(PARTICLE_COUNT * 0.55); // 1375 points for sphere
+          particles.forEach((p) => {
+            if (p.id < sphereCount) {
+              // Mathematical Sphere
+              const phi = Math.acos(2 * (p.id / sphereCount) - 1);
+              const theta = Math.sqrt(sphereCount * Math.PI) * phi;
+              const r = minDimension * 0.15;
+              
+              p.tx = r * Math.sin(phi) * Math.cos(theta);
+              p.ty = r * Math.sin(phi) * Math.sin(theta);
+              p.tz = r * Math.cos(phi);
+            } else {
+              // Tilted Saturn's Flat Ring
+              const ringId = p.id - sphereCount;
+              const ringMax = PARTICLE_COUNT - sphereCount;
+              const rRatio = ringId / ringMax;
+              const innerRadius = minDimension * 0.20;
+              const outerRadius = minDimension * 0.38;
+              const r = innerRadius + rRatio * (outerRadius - innerRadius);
+              
+              const theta = (ringId * 137.5) * (Math.PI / 180); // Fibonacci spiral angles
+              
+              // Base ring coordinates in flat plane
+              const rx = r * Math.cos(theta);
+              const ry = 0;
+              const rz = r * Math.sin(theta) + (Math.random() - 0.5) * 12; // Thin volumetric ring
+
+              // Tilt around standard 3D Axes (X-axis tilt: 28deg, Z-axis tilt: -10deg)
+              const cosX = Math.cos(0.48), sinX = Math.sin(0.48);
+              const cosZ = Math.cos(-0.17), sinZ = Math.sin(-0.17);
+
+              const y1 = ry * cosX - rz * sinX;
+              const z1 = ry * sinX + rz * cosX;
+
+              p.tx = rx * cosZ - y1 * sinZ;
+              p.ty = rx * sinZ + y1 * cosZ;
+              p.tz = z1;
+            }
+          });
+          break;
+
+        case "HEART":
+          // Open Palm Mapping -> Volumetric sharp Neon Heart
+          particles.forEach((p) => {
+            const step = p.id / PARTICLE_COUNT;
+            const t = step * Math.PI * 2;
+            
+            // Parametric sharp detailed heart formula
+            let hx = 16 * Math.pow(Math.sin(t), 3);
+            let hy = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+            
+            // Scaled size
+            const heartScale = minDimension * 0.015;
+            p.tx = hx * heartScale;
+            p.ty = hy * heartScale;
+            p.tz = (Math.random() - 0.5) * 60; // 3D thickness
+          });
+          break;
+
+        case "LOVE":
+          // Pointing Mapping -> "I LOVE YOU" arrangement
+          let startIdx = 0;
+          const loveScale = minDimension * 0.28;
+          iLoveYouConfig.forEach((cfg) => {
+            for (let i = 0; i < cfg.count; i++) {
+              const pIdx = startIdx + i;
+              if (pIdx >= PARTICLE_COUNT) break;
+
+              const p = particles[pIdx];
+              const t = i / (cfg.count - 1 || 1);
+              const pt = getLetterPoint(cfg.char, t);
+              
+              p.tx = (cfg.x * 0.28 + pt.x * 0.2) * loveScale;
+              p.ty = (pt.y * 0.26) * loveScale;
+              p.tz = (Math.random() - 0.5) * 30;
+            }
+            startIdx += cfg.count;
+          });
+          break;
+
+        case "SEEYOU":
+          // Peace Sign Mapping -> "SEE YOU" Typography
+          let sIdx = 0;
+          const seeScale = minDimension * 0.35;
+          seeYouConfig.forEach((cfg) => {
+            for (let i = 0; i < cfg.count; i++) {
+              const pIdx = sIdx + i;
+              if (pIdx >= PARTICLE_COUNT) break;
+
+              const p = particles[pIdx];
+              const t = i / (cfg.count - 1 || 1);
+              const pt = getLetterPoint(cfg.char, t);
+
+              p.tx = (cfg.x * 0.3 + pt.x * 0.22) * seeScale;
+              p.ty = (pt.y * 0.28) * seeScale;
+              p.tz = (Math.random() - 0.5) * 30;
+            }
+            sIdx += cfg.count;
+          });
+          break;
+      }
+    }
+
+    // Switch Shape Manager
+    window.switchShape = function(shape) {
+      if (shape === targetShapeType) return;
+      targetShapeType = shape;
+      shapesProgress = 0.0;
+      generateShapeTargets(shape);
+
+      // Reset active styles on custom top overlay controls
+      document.querySelectorAll(".shape-btn").forEach((btn) => {
+        btn.classList.remove("bg-white/10", "text-white");
+        btn.classList.add("bg-white/5", "text-gray-400");
+      });
+      
+      const btnMap = {
+        GALAXY: "btnGalaxy",
+        SATURN: "btnSaturn",
+        HEART: "btnHeart",
+        LOVE: "btnLove",
+        SEEYOU: "btnSeeYou"
+      };
+      
+      const activeBtn = document.getElementById(btnMap[shape]);
+      if (activeBtn) {
+        activeBtn.classList.remove("bg-white/5", "text-gray-400");
+        activeBtn.classList.add("bg-white/10", "text-white");
+      }
+    };
+
+    // System bootstrap entry point
+    window.initSystem = async function(useCam) {
+      loadingLogs.innerText = "Setting up MediaPipe WebGL delegate...";
+      
+      try {
+        if (useCam) {
+          await startWebcam();
+          await initMediaPipe();
+        } else {
+          // Initialize in gorgeous touch-interactive mode
+          videoPlaceholder.innerHTML = `<i class="fa-solid fa-touch-app text-2xl mb-1 text-cyan-400"></i><span class="text-[9px]">Touch Mode</span>`;
+          video.classList.add("hidden");
+        }
+        
+        initBokeh();
+        initParticles();
+        generateShapeTargets(targetShapeType);
+        resizeCanvas();
+
+        // Fade out initial dynamic loader
+        loadingOverlay.classList.add("opacity-0", "pointer-events-none");
+        setTimeout(() => {
+          loadingOverlay.style.display = "none";
+        }, 500);
+
+        requestAnimationFrame(renderLoop);
+      } catch (err) {
+        console.error("Initiation failure: ", err);
+        loadingLogs.innerHTML = `<span class="text-red-500">Initialization failed. Launching demo...</span>`;
+        setTimeout(() => {
+          window.initSystem(false);
+        }, 1500);
+      }
+    };
+
+    // MediaPipe Vision Handler init
+    async function initMediaPipe() {
+      loadingLogs.innerText = "Loading AI Hand Tracking Models...";
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
+      );
+      
+      handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 1
+      });
+      
+      cameraActive = true;
+    }
+
+    // Capture dynamic user media
+    async function startWebcam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          video.play();
+          video.classList.remove("hidden");
+          videoPlaceholder.classList.add("hidden");
+        };
+      } catch (e) {
+        console.warn("Camera blocked or unavailable", e);
+        throw e;
+      }
+    }
+
+    // High performance gesture analyzer (Android optimized execution)
+    function analyzeGesture(landmarks) {
+      if (!landmarks || landmarks.length < 21) return;
+
+      // Finger state definitions
+      const fingersUp = {
+        thumb: false,
+        index: false,
+        middle: false,
+        ring: false,
+        pinky: false
+      };
+
+      // Vector thresholds for vertical hands
+      // Wrist point is [0]
+      const wrist = landmarks[0];
+
+      // Finger tips: Thumb(4), Index(8), Middle(12), Ring(16), Pinky(20)
+      // Reference MCP joints: Index(5), Middle(9), Ring(13), Pinky(17)
+      
+      fingersUp.index = landmarks[8].y < landmarks[6].y;
+      fingersUp.middle = landmarks[12].y < landmarks[10].y;
+      fingersUp.ring = landmarks[16].y < landmarks[14].y;
+      fingersUp.pinky = landmarks[20].y < landmarks[18].y;
+
+      // Thumb dynamic checking based on horizontal distances to index MCP
+      const thumbTip = landmarks[4];
+      const thumbJoint = landmarks[3];
+      const indexMcp = landmarks[5];
+      const ringMcp = landmarks[13];
+
+      // Distance threshold from ring MCP to evaluate thumb expansion
+      const d1 = Math.hypot(thumbTip.x - ringMcp.x, thumbTip.y - ringMcp.y);
+      const d2 = Math.hypot(thumbJoint.x - ringMcp.x, thumbJoint.y - ringMcp.y);
+      fingersUp.thumb = d1 > d2;
+
+      // Count dynamic finger configurations
+      const count = Object.values(fingersUp).filter(Boolean).length;
+
+      // Exact gesture classification
+      if (count <= 1) {
+        // Fist -> 3D Saturn
+        switchShape("SATURN");
+        gestureStatus.innerText = "Saturn Gesture Recognized [FIST]";
+      } else if (fingersUp.index && fingersUp.middle && !fingersUp.ring && !fingersUp.pinky) {
+        // Peace Sign -> SEE YOU Text
+        switchShape("SEEYOU");
+        gestureStatus.innerText = "SEE YOU Gesture Recognized [PEACE]";
+      } else if (fingersUp.index && !fingersUp.middle && !fingersUp.ring && !fingersUp.pinky) {
+        // Pointing -> I LOVE YOU Text
+        switchShape("LOVE");
+        gestureStatus.innerText = "LOVE Gesture Recognized [POINTING]";
+      } else if (count >= 4) {
+        // Open Palm -> Heart Shape
+        switchShape("HEART");
+        gestureStatus.innerText = "Heart Gesture Recognized [PALM]";
+      }
+    }
+
+    // Native MediaPipe Pipeline
+    function processHandTracking() {
+      if (!handLandmarker || video.readyState !== 4) return;
+
+      const now = performance.now();
+      // Throttle landmarker check to every 45ms to reduce CPU/GPU heat on Android
+      if (now - lastDetectionTime > 45) {
+        const detections = handLandmarker.detectForVideo(video, now);
+        
+        if (detections && detections.landmarks && detections.landmarks.length > 0) {
+          isHandPresent = true;
+          const landmarks = detections.landmarks[0];
+          
+          // Identify spatial centers and map screen projection values
+          // Mirroring coordinates to align seamlessly with UI
+          const rawCenterX = 1.0 - landmarks[9].x; 
+          const rawCenterY = landmarks[9].y;
+
+          handTargetCenter.x = rawCenterX * window.innerWidth;
+          handTargetCenter.y = rawCenterY * window.innerHeight;
+
+          // Compute hand bounding box depth size to apply real-time zoom/scale configurations
+          const wrist = landmarks[0];
+          const mcp = landmarks[9];
+          const distanceScale = Math.hypot(wrist.x - mcp.x, wrist.y - mcp.y);
+          
+          // Map distance to relative shape size
+          handTargetScale = Math.max(0.4, Math.min(2.5, distanceScale * 3.8));
+
+          // Run gesture engine
+          analyzeGesture(landmarks);
+        } else {
+          isHandPresent = false;
+          handTargetScale = 1.0;
+          // Slowly revert shapes to gentle drifting galaxy if hand departs
+          setTimeout(() => {
+            if (!isHandPresent) {
+              switchShape("GALAXY");
+              gestureStatus.innerText = "Idle (Swirling Galaxy)";
+            }
+          }, 2000);
+        }
+        lastDetectionTime = now;
+      }
+    }
+
+    // Desktop/Touch Interactivity support
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let touchScale = 1.0;
+
+    window.addEventListener("pointermove", (e) => {
+      if (!cameraActive) {
+        // Use coordinates directly for beautiful fluid transitions on Android Touch devices
+        handTargetCenter.x = e.clientX;
+        handTargetCenter.y = e.clientY;
+        isHandPresent = true;
+      }
+    });
+
+    window.addEventListener("pointerleave", () => {
+      if (!cameraActive) {
+        isHandPresent = false;
+      }
+    });
+
+    // Pure 3D projection formulas
+    const perspective = 400; // Focal length
+
+    // Render loop processing 2500 particles with 60fps organic mechanics
+    function renderLoop(timestamp) {
+      // Clear with micro transparent overlay to generate premium subtle movement trace
+      ctx.fillStyle = "rgba(3, 3, 8, 0.25)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Render ultra blurred soft bokeh layers first (Macro perspective depth)
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      bokehParticles.forEach((b) => {
+        b.x += b.vx;
+        b.y += b.vy;
+        
+        // Loop boundary detection
+        if (b.x < -b.r) b.x = window.innerWidth + b.r;
+        if (b.x > window.innerWidth + b.r) b.x = -b.r;
+        if (b.y < -b.r) b.y = window.innerHeight + b.r;
+        if (b.y > window.innerHeight + b.r) b.y = -b.r;
+
+        const bokehGrad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        bokehGrad.addColorStop(0, b.color + b.opacity + ")");
+        bokehGrad.addColorStop(0.5, b.color + (b.opacity * 0.4) + ")");
+        bokehGrad.addColorStop(1, "rgba(0,0,0,0)");
+        
+        ctx.fillStyle = bokehGrad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      // Process camera frame
+      if (cameraActive) {
+        processHandTracking();
+      }
+
+      // Smooth Ease filter on hand spatial centers
+      const easeSpeed = 0.12;
+      if (isHandPresent) {
+        handCenter.x += (handTargetCenter.x - handCenter.x) * easeSpeed;
+        handCenter.y += (handTargetCenter.y - handCenter.y) * easeSpeed;
+        handScale += (handTargetScale - handScale) * easeSpeed;
+      } else {
+        // Idle central default focus
+        handCenter.x += (window.innerWidth / 2 - handCenter.x) * 0.05;
+        handCenter.y += (window.innerHeight / 2 - handCenter.y) * 0.05;
+        handScale += (1.0 - handScale) * 0.05;
+      }
+
+      // Apply slow global cinematic rotations
+      globalAngle += 0.006;
+      const cosG = Math.cos(globalAngle);
+      const sinG = Math.sin(globalAngle);
+
+      // Particles math physics calculations
+      ctx.save();
+      // Setup blending style for maximum high-density glow vibrancy
+      ctx.globalCompositeOperation = "lighter";
+
+      const physicsEase = 0.08;
+      const friction = 0.85;
+
+      particles.forEach((p) => {
+        // Gentle organic rotation of target points in 3D around global shape axis
+        let rx = p.tx;
+        let ry = p.ty;
+        let rz = p.tz;
+
+        // Apply global orbital spin for extra dynamic realism
+        if (targetShapeType === "GALAXY" || targetShapeType === "SATURN") {
+          const tempX = rx * Math.cos(0.003) - rz * Math.sin(0.003);
+          const tempZ = rx * Math.sin(0.003) + rz * Math.cos(0.003);
+          p.tx = tempX;
+          p.tz = tempZ;
+        }
+
+        // Project coordinate relative to current hand centers
+        let projectedTargetX = handCenter.x + rx * handScale;
+        let projectedTargetY = handCenter.y + ry * handScale;
+        let projectedTargetZ = rz * handScale;
+
+        // Add organic drift (microscopic noise mimicking real physical dust airflows)
+        const noise = Math.sin(timestamp * 0.001 + p.id) * 3;
+        projectedTargetX += Math.cos(p.id) * noise;
+        projectedTargetY += Math.sin(p.id) * noise;
+
+        // Velocity friction tracking (Ease to Target vectors)
+        let dx = projectedTargetX - p.x;
+        let dy = projectedTargetY - p.y;
+        let dz = projectedTargetZ - p.z;
+
+        p.vx += dx * physicsEase * p.speedOffset;
+        p.vy += dy * physicsEase * p.speedOffset;
+        p.vz += dz * physicsEase * p.speedOffset;
+
+        p.vx *= friction;
+        p.vy *= friction;
+        p.vz *= friction;
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.z += p.vz;
+
+        // Perspective projections
+        const scale = perspective / (perspective + p.z);
+        const screenX = p.x;
+        const screenY = p.y;
+        const radius = Math.max(0.2, p.size * scale * (handScale * 0.7 + 0.3));
+
+        // Skip render if off viewport
+        if (screenX < 0 || screenX > canvas.width || screenY < 0 || screenY > canvas.height) return;
+
+        // Premium Dual-Layer glow implementation (Mobile friendly alternative to expensive canvas shadows)
+        // Layer 1: Outer glowing neon aura
+        ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${0.12 * scale})`;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, radius * 3.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Layer 2: Core luminous point
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * scale})`;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+      requestAnimationFrame(renderLoop);
+    }
+  </script>
+</body>
+</html>
+
+```
